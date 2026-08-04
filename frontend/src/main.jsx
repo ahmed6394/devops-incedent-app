@@ -97,7 +97,7 @@ function App() {
     <main className="page-shell">
       <header className="hero">
         <div>
-          <p className="eyebrow">Docker Practice Lab</p>
+          <p className="eyebrow">DevOps Practice Lab</p>
           <h1>Incident Command Center</h1>
           <p>React frontend · Express API · PostgreSQL database</p>
         </div>
