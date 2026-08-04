@@ -206,6 +206,34 @@ button:disabled {
   background: #ffd5d7;
 }
 
+.badge.source-docker {
+  background: #d6ebff;
+}
+
+.badge.source-kubernetes {
+  background: #e7dcff;
+}
+
+.badge.source-manual {
+  background: #e5e9ed;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-row select {
+  width: auto;
+}
+
+.source-ref {
+  color: #475466;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+}
+
 .danger-link {
   padding: 4px 0;
   background: transparent;
@@ -255,5 +283,13 @@ button:disabled {
 
   .incident-footer select {
     width: 100%;
+  }
+
+  .filter-row {
+    width: 100%;
+  }
+
+  .filter-row select {
+    flex: 1;
   }
 }
