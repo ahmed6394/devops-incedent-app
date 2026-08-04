@@ -6,11 +6,14 @@ const emptyForm = {
   title: '',
   description: '',
   severity: 'medium',
+  source: 'manual',
+  source_ref: '',
 };
 
 function App() {
   const [incidents, setIncidents] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -23,7 +26,8 @@ function App() {
   async function loadIncidents() {
     try {
       setError('');
-      const response = await fetch('/api/incidents');
+      const query = filter === 'all' ? '' : `?source=${filter}`;
+      const response = await fetch(`/api/incidents${query}`);
       if (!response.ok) throw new Error('Could not load incidents');
       setIncidents(await response.json());
     } catch (loadError) {
@@ -35,7 +39,7 @@ function App() {
 
   useEffect(() => {
     loadIncidents();
-  }, []);
+  }, [filter]);
 
   async function createIncident(event) {
     event.preventDefault();
@@ -151,15 +155,50 @@ function App() {
             </select>
           </label>
 
+          <label>
+            Source
+            <select
+              value={form.source}
+              onChange={(event) => setForm({ ...form, source: event.target.value })}
+            >
+              <option value="manual">Manual</option>
+              <option value="docker">Docker</option>
+              <option value="kubernetes">Kubernetes</option>
+            </select>
+          </label>
+
+          <label>
+            Source reference
+            <input
+              value={form.source_ref}
+              onChange={(event) =>
+                setForm({ ...form, source_ref: event.target.value })
+              }
+              placeholder="e.g. web-api, payments/payments-7d8f6c9b55"
+            />
+          </label>
+
           <button disabled={saving}>{saving ? 'Creating…' : 'Create incident'}</button>
         </form>
 
         <section className="panel incidents-panel">
           <div className="panel-heading">
             <h2>Current incidents</h2>
-            <button className="secondary" type="button" onClick={loadIncidents}>
-              Refresh
-            </button>
+            <div className="filter-row">
+              <select
+                aria-label="Filter by source"
+                value={filter}
+                onChange={(event) => setFilter(event.target.value)}
+              >
+                <option value="all">All sources</option>
+                <option value="manual">Manual</option>
+                <option value="docker">Docker</option>
+                <option value="kubernetes">Kubernetes</option>
+              </select>
+              <button className="secondary" type="button" onClick={loadIncidents}>
+                Refresh
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -175,6 +214,9 @@ function App() {
                       <span className={`badge ${incident.severity}`}>
                         {incident.severity}
                       </span>
+                      <span className={`badge source-${incident.source}`}>
+                        {incident.source}
+                      </span>
                       <h3>{incident.title}</h3>
                     </div>
                     <button
@@ -187,6 +229,9 @@ function App() {
                   </div>
                   <p>{incident.description || 'No description provided.'}</p>
                   <div className="incident-footer">
+                    {incident.source_ref && (
+                      <span className="source-ref">{incident.source_ref}</span>
+                    )}
                     <select
                       value={incident.status}
                       onChange={(event) =>

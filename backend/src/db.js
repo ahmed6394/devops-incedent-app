@@ -47,28 +47,56 @@ export async function initializeDatabase() {
         CHECK (severity IN ('low', 'medium', 'high', 'critical')),
       status VARCHAR(20) NOT NULL DEFAULT 'open'
         CHECK (status IN ('open', 'investigating', 'resolved')),
+      source VARCHAR(20) NOT NULL DEFAULT 'manual'
+        CHECK (source IN ('manual', 'docker', 'kubernetes')),
+      source_ref VARCHAR(200),
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+
+  await pool.query(`
+    ALTER TABLE incidents
+      ADD COLUMN IF NOT EXISTS source VARCHAR(20) NOT NULL DEFAULT 'manual'
+        CHECK (source IN ('manual', 'docker', 'kubernetes')),
+      ADD COLUMN IF NOT EXISTS source_ref VARCHAR(200);
   `);
 
   const countResult = await pool.query('SELECT COUNT(*)::int AS count FROM incidents');
 
   if (countResult.rows[0].count === 0) {
     await pool.query(
-      `INSERT INTO incidents (title, description, severity, status)
+      `INSERT INTO incidents (title, description, severity, status, source, source_ref)
        VALUES
-         ($1, $2, $3, $4),
-         ($5, $6, $7, $8)`,
+         ($1, $2, $3, $4, $5, $6),
+         ($7, $8, $9, $10, $11, $12),
+         ($13, $14, $15, $16, $17, $18),
+         ($19, $20, $21, $22, $23, $24)`,
       [
         'API response time increased',
         'The checkout API is responding more slowly than normal.',
         'high',
         'investigating',
+        'manual',
+        null,
         'Nightly backup completed late',
         'The database backup completed successfully after a delay.',
         'medium',
         'resolved',
+        'manual',
+        null,
+        'Container restarted in a crash loop',
+        'The web-api container keeps restarting with exit code 1.',
+        'high',
+        'open',
+        'docker',
+        'web-api',
+        'Pod stuck in CrashLoopBackOff',
+        'The payments pod cannot start; the liveness probe is failing.',
+        'critical',
+        'open',
+        'kubernetes',
+        'payments/payments-7d8f6c9b55',
       ],
     );
   }

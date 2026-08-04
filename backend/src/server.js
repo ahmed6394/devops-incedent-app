@@ -6,6 +6,7 @@ const app = express();
 const port = Number(process.env.PORT || 5000);
 const validSeverities = new Set(['low', 'medium', 'high', 'critical']);
 const validStatuses = new Set(['open', 'investigating', 'resolved']);
+const validSources = new Set(['manual', 'docker', 'kubernetes']);
 
 app.use(cors());
 app.use(express.json({ limit: '100kb' }));
@@ -28,13 +29,27 @@ app.get('/health', async (_request, response) => {
   }
 });
 
-app.get('/api/incidents', async (_request, response, next) => {
+app.get('/api/incidents', async (request, response, next) => {
   try {
-    const result = await pool.query(
-      `SELECT id, title, description, severity, status, created_at, updated_at
-       FROM incidents
-       ORDER BY created_at DESC`,
-    );
+    const { source } = request.query;
+
+    if (source !== undefined && !validSources.has(source)) {
+      return response.status(400).json({ message: 'invalid source' });
+    }
+
+    const columns =
+      'id, title, description, severity, status, source, source_ref, created_at, updated_at';
+
+    const result =
+      source === undefined
+        ? await pool.query(
+            `SELECT ${columns} FROM incidents ORDER BY created_at DESC`,
+          )
+        : await pool.query(
+            `SELECT ${columns} FROM incidents WHERE source = $1 ORDER BY created_at DESC`,
+            [source],
+          );
+
     response.json(result.rows);
   } catch (error) {
     next(error);
@@ -48,6 +63,8 @@ app.post('/api/incidents', async (request, response, next) => {
       description = '',
       severity = 'medium',
       status = 'open',
+      source = 'manual',
+      source_ref,
     } = request.body;
 
     if (!title || typeof title !== 'string' || title.trim().length < 3) {
@@ -64,11 +81,38 @@ app.post('/api/incidents', async (request, response, next) => {
       return response.status(400).json({ message: 'invalid status' });
     }
 
+    if (!validSources.has(source)) {
+      return response.status(400).json({ message: 'invalid source' });
+    }
+
+    let normalizedSourceRef = null;
+    if (source_ref !== undefined && source_ref !== '') {
+      if (typeof source_ref !== 'string') {
+        return response.status(400).json({
+          message: 'source_ref must be a string',
+        });
+      }
+      const trimmed = source_ref.trim();
+      if (trimmed.length > 200) {
+        return response.status(400).json({
+          message: 'source_ref must be at most 200 characters',
+        });
+      }
+      normalizedSourceRef = trimmed;
+    }
+
     const result = await pool.query(
-      `INSERT INTO incidents (title, description, severity, status)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, title, description, severity, status, created_at, updated_at`,
-      [title.trim(), String(description).trim(), severity, status],
+      `INSERT INTO incidents (title, description, severity, status, source, source_ref)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, title, description, severity, status, source, source_ref, created_at, updated_at`,
+      [
+        title.trim(),
+        String(description).trim(),
+        severity,
+        status,
+        source,
+        normalizedSourceRef,
+      ],
     );
 
     return response.status(201).json(result.rows[0]);
@@ -94,7 +138,7 @@ app.patch('/api/incidents/:id/status', async (request, response, next) => {
       `UPDATE incidents
        SET status = $1, updated_at = NOW()
        WHERE id = $2
-       RETURNING id, title, description, severity, status, created_at, updated_at`,
+       RETURNING id, title, description, severity, status, source, source_ref, created_at, updated_at`,
       [status, incidentId],
     );
 
