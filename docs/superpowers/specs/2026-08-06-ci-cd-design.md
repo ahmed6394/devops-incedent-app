@@ -18,7 +18,8 @@ successful verification.
 - **Security scan:** Trivy scan of both images with a CRITICAL/HIGH threshold
   that fails the build on findings. Pinned to `aquasecurity/trivy-action@0.36.0`
   (versions up to `0.34.2` were compromised in the March 2026 supply-chain
-  attack; `0.35.0` and newer are safe).
+  attack; `0.35.0` and newer are safe). The version tag uses the `v` prefix
+  (`v0.36.0`).
 - **Registry:** Docker Hub (`ahmed63/devops-incident-management-{backend,frontend}`),
   tags `latest` and `sha-<commit>`.
 - **Secrets:** `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`, stored as GitHub
