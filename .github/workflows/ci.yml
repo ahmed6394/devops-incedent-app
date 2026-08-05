@@ -31,7 +31,7 @@ jobs:
         run: docker compose build
 
       - name: Scan backend image
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: devops-incident-management-backend:latest
           format: table
@@ -40,7 +40,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Scan frontend image
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: devops-incident-management-frontend:latest
           format: table
