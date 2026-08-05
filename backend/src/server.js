@@ -1,6 +1,8 @@
 import cors from 'cors';
 import express from 'express';
+import { authRouter, requireAuth, sessionMiddleware } from './auth.js';
 import { initializeDatabase, pool, waitForDatabase } from './db.js';
+import { usersRouter } from './users.js';
 
 const app = express();
 const port = Number(process.env.PORT || 5000);
@@ -8,8 +10,28 @@ const validSeverities = new Set(['low', 'medium', 'high', 'critical']);
 const validStatuses = new Set(['open', 'investigating', 'resolved']);
 const validSources = new Set(['manual', 'docker', 'kubernetes']);
 
+const incidentColumns = `
+  i.id, i.title, i.description, i.severity, i.status, i.source, i.source_ref,
+  i.created_at, i.updated_at, i.resolved_at,
+  u.username AS "createdBy",
+  r.username AS "resolvedBy"
+`;
+
+async function fetchIncidentById(id) {
+  const result = await pool.query(
+    `SELECT ${incidentColumns}
+     FROM incidents i
+     LEFT JOIN users u ON u.id = i.created_by
+     LEFT JOIN users r ON r.id = i.resolved_by
+     WHERE i.id = $1`,
+    [id],
+  );
+  return result.rows[0];
+}
+
 app.use(cors());
 app.use(express.json({ limit: '100kb' }));
+app.use(sessionMiddleware);
 
 app.get('/health', async (_request, response) => {
   try {
@@ -29,7 +51,10 @@ app.get('/health', async (_request, response) => {
   }
 });
 
-app.get('/api/incidents', async (request, response, next) => {
+app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
+
+app.get('/api/incidents', requireAuth, async (request, response, next) => {
   try {
     const { source } = request.query;
 
@@ -37,16 +62,22 @@ app.get('/api/incidents', async (request, response, next) => {
       return response.status(400).json({ message: 'invalid source' });
     }
 
-    const columns =
-      'id, title, description, severity, status, source, source_ref, created_at, updated_at';
-
     const result =
       source === undefined
         ? await pool.query(
-            `SELECT ${columns} FROM incidents ORDER BY created_at DESC`,
+            `SELECT ${incidentColumns}
+             FROM incidents i
+             LEFT JOIN users u ON u.id = i.created_by
+             LEFT JOIN users r ON r.id = i.resolved_by
+             ORDER BY i.created_at DESC`,
           )
         : await pool.query(
-            `SELECT ${columns} FROM incidents WHERE source = $1 ORDER BY created_at DESC`,
+            `SELECT ${incidentColumns}
+             FROM incidents i
+             LEFT JOIN users u ON u.id = i.created_by
+             LEFT JOIN users r ON r.id = i.resolved_by
+             WHERE i.source = $1
+             ORDER BY i.created_at DESC`,
             [source],
           );
 
@@ -56,7 +87,7 @@ app.get('/api/incidents', async (request, response, next) => {
   }
 });
 
-app.post('/api/incidents', async (request, response, next) => {
+app.post('/api/incidents', requireAuth, async (request, response, next) => {
   try {
     const {
       title,
@@ -101,10 +132,10 @@ app.post('/api/incidents', async (request, response, next) => {
       normalizedSourceRef = trimmed;
     }
 
-    const result = await pool.query(
-      `INSERT INTO incidents (title, description, severity, status, source, source_ref)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, title, description, severity, status, source, source_ref, created_at, updated_at`,
+    const inserted = await pool.query(
+      `INSERT INTO incidents (title, description, severity, status, source, source_ref, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id`,
       [
         title.trim(),
         String(description).trim(),
@@ -112,16 +143,18 @@ app.post('/api/incidents', async (request, response, next) => {
         status,
         source,
         normalizedSourceRef,
+        request.session.userId,
       ],
     );
 
-    return response.status(201).json(result.rows[0]);
+    const incident = await fetchIncidentById(inserted.rows[0].id);
+    return response.status(201).json(incident);
   } catch (error) {
     return next(error);
   }
 });
 
-app.patch('/api/incidents/:id/status', async (request, response, next) => {
+app.patch('/api/incidents/:id/status', requireAuth, async (request, response, next) => {
   try {
     const incidentId = Number(request.params.id);
     const { status } = request.body;
@@ -134,25 +167,31 @@ app.patch('/api/incidents/:id/status', async (request, response, next) => {
       return response.status(400).json({ message: 'invalid status' });
     }
 
-    const result = await pool.query(
+    const resolving = status === 'resolved';
+
+    const updated = await pool.query(
       `UPDATE incidents
-       SET status = $1, updated_at = NOW()
-       WHERE id = $2
-       RETURNING id, title, description, severity, status, source, source_ref, created_at, updated_at`,
-      [status, incidentId],
+       SET status = $1,
+           updated_at = NOW(),
+           resolved_by = CASE WHEN $2 THEN $3::integer ELSE NULL END,
+           resolved_at = CASE WHEN $2 THEN NOW() ELSE NULL END
+       WHERE id = $4
+       RETURNING id`,
+      [status, resolving, request.session.userId, incidentId],
     );
 
-    if (result.rowCount === 0) {
+    if (updated.rowCount === 0) {
       return response.status(404).json({ message: 'incident not found' });
     }
 
-    return response.json(result.rows[0]);
+    const incident = await fetchIncidentById(updated.rows[0].id);
+    return response.json(incident);
   } catch (error) {
     return next(error);
   }
 });
 
-app.delete('/api/incidents/:id', async (request, response, next) => {
+app.delete('/api/incidents/:id', requireAuth, async (request, response, next) => {
   try {
     const incidentId = Number(request.params.id);
 

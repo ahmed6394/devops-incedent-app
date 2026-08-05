@@ -28,6 +28,9 @@ services:
       DB_NAME: ${POSTGRES_DB:-incidentdb}
       DB_USER: ${POSTGRES_USER:-incident_user}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-change-me}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
     depends_on:
       database:
         condition: service_healthy
