@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate compose configuration
+        run: docker compose config
+
+      - name: Build images
+        run: docker compose build
+
+  scan:
+    name: Scan images with Trivy
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: devops-incident-management-backend:latest
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: devops-incident-management-frontend:latest
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          ignore-unfixed: true
+
+  smoke:
+    name: Full-stack smoke test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Start the stack
+        run: docker compose up -d
+
+      - name: Wait for backend health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:5000/health; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Backend did not become healthy in time" >&2
+          exit 1
+
+      - name: Smoke test the API
+        run: |
+          set -euo pipefail
+
+          curl -fsS http://localhost:3000/ > /dev/null
+
+          curl -fsS -c /tmp/cookies.txt -X POST http://localhost:5000/api/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"admin","password":"admin"}' > /dev/null
+
+          curl -fsS -b /tmp/cookies.txt http://localhost:5000/api/incidents > /dev/null
+
+          curl -fsS -b /tmp/cookies.txt -X POST http://localhost:5000/api/incidents \
+            -H 'Content-Type: application/json' \
+            -d '{"title":"CI smoke incident","description":"Created by the CI pipeline.","severity":"low"}' \
+            > /tmp/incident.json
+
+          INCIDENT_ID=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/tmp/incident.json','utf8')).id.toString())")
+
+          curl -fsS -b /tmp/cookies.txt -X PATCH "http://localhost:5000/api/incidents/${INCIDENT_ID}/status" \
+            -H 'Content-Type: application/json' \
+            -d '{"status":"resolved"}' > /dev/null
+
+          curl -fsS -b /tmp/cookies.txt -X DELETE "http://localhost:5000/api/incidents/${INCIDENT_ID}" \
+            -o /dev/null
+
+          echo "Smoke test passed"
+
+      - name: Tear down the stack
+        if: always()
+        run: docker compose down -v
+
+  publish:
+    name: Publish images to Docker Hub
+    needs: [scan, smoke]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Tag and push images
+        env:
+          IMAGE_NAMESPACE: ahmed63
+          SHA_TAG: sha-${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for IMAGE in backend frontend; do
+            docker tag "devops-incident-management-${IMAGE}:latest" \
+              "${IMAGE_NAMESPACE}/devops-incident-management-${IMAGE}:latest"
+            docker tag "devops-incident-management-${IMAGE}:latest" \
+              "${IMAGE_NAMESPACE}/devops-incident-management-${IMAGE}:${SHA_TAG}"
+            docker push "${IMAGE_NAMESPACE}/devops-incident-management-${IMAGE}:latest"
+            docker push "${IMAGE_NAMESPACE}/devops-incident-management-${IMAGE}:${SHA_TAG}"
+          done
