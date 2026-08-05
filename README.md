@@ -1,45 +1,14 @@
-# bongoDev Incident Management Application
+# DevOps Incident Management Application
 
 ## DevOps Containerization Assignment
 
-Welcome to the bongoDev engineering team.
+Welcome to the DevOps engineering team.
 
-This repository contains a small three-tier incident-management application. The application is functionally complete, but it has not been prepared for container-based deployment. Your responsibility as the DevOps engineer is to design and implement a reliable Docker-based local runtime for the complete system.
-
-You are expected to understand the application, identify its runtime dependencies, create production-conscious container images, connect the services with Docker Compose, preserve database data, and document how another engineer can operate the environment.
-
-> **Important:** This document describes the application and the expected outcome. It intentionally does not provide the Dockerfile or Compose implementation.
+This repository contains a three-tier incident-management application.
 
 ---
 
-## 1. Assignment objective
-
-Containerize and orchestrate the following services:
-
-1. **Frontend** — React application built with Vite
-2. **Backend** — Node.js and Express REST API
-3. **Database** — PostgreSQL
-
-After your work is complete, another engineer should be able to clone the repository and start the entire application with one command:
-
-```bash
-docker compose up --build
-```
-
-The completed environment must provide:
-
-- A working browser-based frontend
-- A healthy backend API
-- A PostgreSQL database
-- Automatic service-to-service communication
-- Persistent database storage
-- Environment-based configuration
-- Health checks and predictable startup behavior
-- Clear operational documentation
-
----
-
-## 2. Application overview
+## 1. Application overview
 
 The application is an **Incident Command Center** used to record and manage operational incidents.
 
@@ -54,7 +23,7 @@ Users can:
 
 The frontend communicates with the backend through HTTP. The backend stores and retrieves incident records from PostgreSQL.
 
-### Target architecture
+### Architecture
 
 ```text
 Browser
@@ -76,7 +45,7 @@ The browser should access only the frontend for normal application usage. The fr
 
 ---
 
-## 3. Repository structure
+## 2. Repository structure
 
 ```text
 incident-management-docker-lab/
@@ -97,23 +66,11 @@ incident-management-docker-lab/
 └── README.md
 ```
 
-You will add the required Docker and operational files. At minimum, this will normally include:
-
-```text
-backend/Dockerfile
-backend/.dockerignore
-frontend/Dockerfile
-frontend/.dockerignore
-compose.yaml
-```
-
-You may add supporting files when justified, such as a web-server configuration, startup script, environment template, or additional documentation.
-
 ---
 
-## 4. Technical specification
+## 3. Technical specification
 
-### 4.1 Frontend
+### 3.1 Frontend
 
 | Item | Specification |
 |---|---|
@@ -162,7 +119,7 @@ A multi-stage build is strongly recommended.
 
 ---
 
-### 4.2 Backend
+### 3.2 Backend
 
 | Item | Specification |
 |---|---|
@@ -227,7 +184,7 @@ The backend image should:
 
 ---
 
-### 4.3 Database
+### 3.3 Database
 
 | Item | Specification |
 |---|---|
@@ -259,7 +216,7 @@ The database data must survive container replacement and normal `docker compose 
 
 ---
 
-## 5. REST API contract
+## 4. REST API contract
 
 ### Health check
 
@@ -349,7 +306,7 @@ Expected response: HTTP `204`.
 
 ---
 
-## 6. Containerization requirements
+## 5. Containerization requirements
 
 Your solution must provide exactly three application services:
 
@@ -359,7 +316,7 @@ Your solution must provide exactly three application services:
 
 Supporting one-time or administrative containers may be proposed, but you must not replace the three required services.
 
-### 6.1 Service networking
+### 5.1 Service networking
 
 Create a Compose network that allows:
 
@@ -391,7 +348,7 @@ The database should remain private to the Compose network unless external access
 
 ---
 
-### 6.2 Configuration
+### 5.2 Configuration
 
 Provide a committed `.env.example` containing non-sensitive example values.
 
@@ -413,9 +370,7 @@ For this exercise, environment variables are acceptable. In a production platfor
 
 ---
 
-### 6.3 Persistence
-
-Use a named volume for PostgreSQL data.
+### 5.3 Persistence
 
 The following workflow must preserve incident records:
 
@@ -437,43 +392,7 @@ Document this distinction clearly.
 
 ---
 
-### 6.4 Health and startup ordering
-
-Implement health checks for all services where practical.
-
-Minimum expectations:
-
-- PostgreSQL is healthy only when it can accept connections
-- Backend is healthy only when `/health` succeeds
-- Frontend is healthy only when its HTTP server responds
-
-The backend must not be treated as ready before PostgreSQL is ready. The frontend must not be treated as ready before the backend is healthy.
-
-Do not rely only on container start order. A started process is not necessarily a ready service.
-
----
-
-### 6.5 Image quality
-
-Your Dockerfiles will be reviewed for:
-
-- Suitable base-image selection
-- Deterministic dependency installation where possible
-- Efficient Docker layer caching
-- Small and appropriate build contexts
-- Useful `.dockerignore` files
-- Multi-stage builds where beneficial
-- Minimal production runtime contents
-- Non-root execution where supported
-- Clear `CMD` or `ENTRYPOINT`
-- No secrets embedded in image layers
-- Reproducible builds
-
-Avoid installing debugging tools or unnecessary packages in production runtime images without justification.
-
----
-
-### 6.6 Reliability and operations
+### 5.4 Reliability and operations
 
 The Compose solution should include sensible restart behavior.
 
@@ -491,7 +410,7 @@ Logs must remain visible through standard container output. Do not write applica
 
 ---
 
-## 7. Required deliverables
+## 6. Required deliverables
 
 Submit the following:
 
@@ -505,20 +424,9 @@ Submit the following:
 8. Updated operational documentation
 9. A short design note named `DEVOPS_NOTES.md`
 
-### `DEVOPS_NOTES.md` must explain
-
-- Your image and base-image choices
-- How frontend API proxying works
-- How services discover one another
-- How startup readiness is handled
-- How PostgreSQL data is persisted
-- How secrets would be handled in a real production environment
-- Any security improvements you implemented
-- Any limitations or future improvements
-
 ---
 
-## 8. Acceptance criteria
+## 7. Acceptance criteria
 
 The assignment is complete only when all of the following pass.
 
@@ -571,7 +479,7 @@ The assignment is complete only when all of the following pass.
 
 ---
 
-## 9. Validation commands
+## 8. Validation commands
 
 Run these commands before submitting your solution.
 
@@ -651,76 +559,7 @@ Confirm that the validation incident still exists.
 
 ---
 
-## 10. Local application execution without Docker
-
-This section helps you understand the application before containerizing it. Docker remains the required final delivery.
-
-### Prerequisites
-
-- A supported Node.js release
-- npm
-- PostgreSQL running locally
-
-### Create the database and user
-
-Create a PostgreSQL database matching the configured values, or provide your own values through environment variables.
-
-Example defaults:
-
-```text
-Database: incidentdb
-User: incident_user
-Port: 5432
-Host: localhost
-```
-
-### Run the backend
-
-```bash
-cd backend
-npm install
-
-export PORT=5000
-export DB_HOST=localhost
-export DB_PORT=5432
-export DB_NAME=incidentdb
-export DB_USER=incident_user
-export DB_PASSWORD=incident_password
-
-npm start
-```
-
-Windows PowerShell example:
-
-```powershell
-cd backend
-npm install
-
-$env:PORT="5000"
-$env:DB_HOST="localhost"
-$env:DB_PORT="5432"
-$env:DB_NAME="incidentdb"
-$env:DB_USER="incident_user"
-$env:DB_PASSWORD="incident_password"
-
-npm start
-```
-
-### Run the frontend for development
-
-In a second terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The source frontend uses relative `/api` paths. When running frontend and backend separately without a reverse proxy, you may need a temporary local proxy configuration for development. Do not solve the production container requirement by hardcoding `localhost:5000` into the frontend source.
-
----
-
-## 11. Troubleshooting expectations
+## 9. Troubleshooting expectations
 
 A DevOps engineer is expected to diagnose issues systematically rather than changing files randomly.
 
@@ -774,55 +613,3 @@ A DevOps engineer is expected to diagnose issues systematically rather than chan
 - Treating a running container as a healthy application
 
 ---
-
-## 12. Evaluation rubric
-
-| Area | Weight |
-|---|---:|
-| Functional Dockerfiles | 20% |
-| Compose orchestration | 20% |
-| Networking and configuration | 15% |
-| Health checks and startup reliability | 15% |
-| Persistence | 10% |
-| Security and image optimization | 10% |
-| Documentation and explanation | 10% |
-
-### Bonus consideration
-
-Additional credit may be awarded for well-justified improvements such as:
-
-- Docker BuildKit cache optimization
-- Read-only runtime filesystem where practical
-- Explicit resource constraints for local testing
-- Compose profiles for optional developer tooling
-- Automated smoke-test script
-- Image vulnerability scanning documentation
-- CI workflow that builds and validates the images
-- Software bill of materials generation
-
-Bonus features must not make the base solution unnecessarily complicated.
-
----
-
-## 13. Definition of done
-
-Your work is considered done when a new engineer can perform the following on a clean machine:
-
-```bash
-git clone <repository-url>
-cd incident-management-docker-lab
-cp .env.example .env
-docker compose up --build -d
-```
-
-You must then be able to:
-
-- Open the frontend
-- Create and manage incidents
-- Confirm backend and database health
-- Review logs
-- Restart the environment without losing data
-- Remove the environment and its data intentionally
-- Understand the architecture and operational commands from your documentation
-
-The goal is not merely to make the containers start. The goal is to deliver a containerized application that is understandable, repeatable, secure by default for a training environment, and straightforward to operate.
