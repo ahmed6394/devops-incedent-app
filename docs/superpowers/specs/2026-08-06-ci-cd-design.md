@@ -68,8 +68,22 @@ Five jobs, `build` -> `scan` + `quality` + `smoke` -> `publish`:
 
 ## Follow-ups (not implemented)
 
-- SHA-pin third-party actions for maximum supply-chain hardening.
 - Add a note in the README pointing at the published images.
+
+## Action pinning (2026-08-06)
+
+All third-party actions in `ci.yml` are pinned to full commit SHAs
+(sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e triggered the
+finding; the same rule applies to every `uses:` line, so all were pinned):
+
+| Action | SHA | Release |
+| --- | --- | --- |
+| `actions/checkout` | `11d5960a326750d5838078e36cf38b85af677262` | v4.4.0 |
+| `aquasecurity/trivy-action` | `ed142fd0673e97e23eac54620cfb913e5ce36c25` | v0.36.0 |
+| `SonarSource/sonarqube-scan-action` | `713881670b6b3676cda39549040e2d88c70d582e` | v8.2.0 |
+| `docker/login-action` | `c94ce9fb468520275223c153574b00df6fe4bcc9` | v3.7.0 |
+
+The release tag is kept as a trailing `# vX.Y.Z` comment for reviewability.
 
 ## First-run hardening (2026-08-06)
 
