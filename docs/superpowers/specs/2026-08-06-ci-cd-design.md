@@ -29,14 +29,30 @@ successful verification.
 
 ## Pipeline
 
-Four jobs, `build` -> `scan` + `smoke` -> `publish`:
+Five jobs, `build` -> `scan` + `quality` + `smoke` -> `publish`:
 
 | Job | Triggers | Steps |
 | --- | --- | --- |
 | `build` | PR + push to main | `docker compose config`, `docker compose build` |
 | `scan` | after `build` | Trivy on both images (`severity: CRITICAL,HIGH`, `exit-code: 1`, `ignore-unfixed: true`) |
+| `quality` | after `build` | SonarQube Cloud analysis via `SonarSource/sonarqube-scan-action@v8.2.0` (`SONAR_TOKEN` + `GITHUB_TOKEN`); report-only, does not gate `publish` |
 | `smoke` | after `build` | `docker compose up -d`, wait for `/health`, then curl: frontend serves, login, list, create, resolve, delete; `docker compose down -v` cleanup |
 | `publish` | after `scan` + `smoke`, push to main only | login to Docker Hub, build, tag `latest` + `sha-<commit>`, push both images |
+
+### SonarQube Cloud (added 2026-08-06)
+
+- Hosted on SonarCloud (no Docker image; the SonarQube Docker image is only
+  relevant for self-hosting).
+- One combined project analyzing `backend/src` and `frontend/src`.
+- Config in `sonar-project.properties` (org/project keys are placeholders to
+  be filled from the SonarCloud onboarding wizard).
+- Static analysis only — no test coverage yet (no test suite exists).
+- Quality gate is report-only (PR decoration + dashboard); it does not block
+  `publish`.
+- Uses `SonarSource/sonarqube-scan-action@v8.2.0`: the old
+  `sonarcloud-github-action` is archived; v8 GPG-verifies the scanner download.
+- Requires one-time setup: create the project in SonarCloud, add the
+  `SONAR_TOKEN` repo secret, authorize the SonarQube Cloud GitHub App.
 
 ## Files
 
