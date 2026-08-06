@@ -9,7 +9,7 @@ This repository is a practical DevOps engineering lab that combines a containeri
 - CI/CD automation in GitHub Actions
 - Vulnerability scanning with Trivy
 - A clear path to add SonarQube for static analysis and code quality gates
-- End-to-end smoke testing against the real stack
+- End-to-end smoke testing against the real stack.
 
 ## Application architecture
 
