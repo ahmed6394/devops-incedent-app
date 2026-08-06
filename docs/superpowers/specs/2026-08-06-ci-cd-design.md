@@ -54,3 +54,16 @@ Four jobs, `build` -> `scan` + `smoke` -> `publish`:
 
 - SHA-pin third-party actions for maximum supply-chain hardening.
 - Add a note in the README pointing at the published images.
+
+## First-run hardening (2026-08-06)
+
+Trivy initially failed on both images; root causes and fixes:
+
+| Image | Finding | Fix |
+| --- | --- | --- |
+| backend | CRITICAL `tar` CVE-2026-59873 + 8 HIGH, all in npm bundled in `node:22-alpine` | Removed global npm from the runtime image and switched `CMD` from `npm start` to `node src/server.js` (npm is unused at runtime) |
+| backend | HIGH `path-to-regexp` CVE-2026-4867 (0.1.12) | Upgraded express 4.21.2 -> 4.22.2 (pins `~0.1.12`, allowing 0.1.13) and re-resolved the lockfile to `path-to-regexp@0.1.13` |
+| frontend | 2 CRITICAL (`libcrypto3`/`libssl3` CVE-2026-31789) + 33 HIGH, stale alpine packages | Added `apk upgrade --no-cache` in the nginx runtime stage |
+
+Both images now scan clean at CRITICAL/HIGH severity (`ignore-unfixed`), and the
+full-stack smoke test passes on the rebuilt images.
