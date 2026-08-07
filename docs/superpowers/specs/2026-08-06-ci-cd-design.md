@@ -53,10 +53,6 @@ Five jobs, `build` -> `scan` + `quality` + `smoke` -> `publish`:
   `sonarcloud-github-action` is archived; v8 GPG-verifies the scanner download.
 - Requires one-time setup: create the project in SonarCloud, add the
   `SONAR_TOKEN` repo secret, authorize the SonarQube Cloud GitHub App.
-- **Setup prerequisite (found 2026-08-07):** disable **Automatic Analysis** on
-  the project (Administration -> Analysis Method). SonarQube Cloud rejects CI
-  analysis with `ERROR You are running CI analysis while Automatic Analysis is
-  enabled` (scanner exit code 3) until it is turned off.
 
 ## Files
 

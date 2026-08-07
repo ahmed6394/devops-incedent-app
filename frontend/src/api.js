@@ -1,10 +1,10 @@
-// function requirePositiveId(value) {
-//   const id = Number(value);
-//   if (!Number.isInteger(id) || id <= 0) {
-//     throw new Error('Invalid id');
-//   }
-//   return id;
-// }
+function requirePositiveId(value) {
+  const id = Number(value);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error('Invalid id');
+  }
+  return id;
+}
 
 async function request(path, { method = 'GET', body } = {}) {
   const response = await fetch(path, {
@@ -40,11 +40,11 @@ export const api = {
   createIncident: (incident) =>
     request('/api/incidents', { method: 'POST', body: incident }),
   updateStatus: (id, status) =>
-    request(`/api/incidents/${id}/status`, { method: 'PATCH', body: { status } }),
+    request(`/api/incidents/${requirePositiveId(id)}/status`, { method: 'PATCH', body: { status } }),
   deleteIncident: (id) =>
-    request(`/api/incidents/${id}`, { method: 'DELETE' }),
+    request(`/api/incidents/${requirePositiveId(id)}`, { method: 'DELETE' }),
 
   users: () => request('/api/users'),
   createUser: (user) => request('/api/users', { method: 'POST', body: user }),
-  deleteUser: (id) => request(`/api/users/${id}`, { method: 'DELETE' }),
+  deleteUser: (id) => request(`/api/users/${requirePositiveId(id)}`, { method: 'DELETE' }),
 };
