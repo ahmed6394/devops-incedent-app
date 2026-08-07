@@ -150,6 +150,16 @@ SonarQube is the next logical quality gate for this project. It can be used to p
 
 In practice, this repository is structured so that SonarQube can be added as an additional pipeline step alongside Trivy without changing the overall delivery model.
 
+### Visuals
+
+SonarQube Cloud overview:
+
+![SonarQube Cloud overview](https://i.ibb.co/fYrtzh29/Screenshot-2026-08-07-143700.png)
+
+GitHub Actions CI pipeline:
+
+![GitHub Actions CI pipeline](https://i.ibb.co/Vpz9xt5r/Screenshot-2026-08-07-143759.png)
+
 ## Operational notes
 
 - The backend waits for the PostgreSQL service to become healthy before starting.
