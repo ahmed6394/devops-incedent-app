@@ -181,3 +181,4 @@ docker compose down -v
 ## Summary
 
 This project serves as a compact but realistic example of DevOps engineering in practice: application delivery, containerization, automation, security, testing, and release workflow all live in one repository.
+9uT6P;)xjn@e)H+p
