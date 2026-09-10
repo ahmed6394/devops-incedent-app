@@ -1,0 +1,13 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # Match the host port to your Kubernetes NodePort
+      - containerPort: 30080
+        hostPort: 30080 # 80 for loadbalancer, 30080 for NodePort
+        protocol: TCP
+      # Backend NodePort
+      - containerPort: 30500
+        hostPort: 5000
+        protocol: TCP

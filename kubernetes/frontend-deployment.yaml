@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: frontend-deployment
+  name: frontend-deployment
+  namespace: my-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-deployment
+  template:
+    metadata:
+      labels:
+        app: frontend-deployment
+    spec:
+      containers:
+      - image: ahmed63/devops-incident-management-frontend
+        name: frontend
+        ports:
+        - containerPort: 80

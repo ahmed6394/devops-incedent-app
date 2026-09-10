@@ -41,6 +41,7 @@ The stack is composed of three main services:
 docker-lab/
 ├── backend/              # Express API service and Dockerfile
 ├── frontend/             # React frontend and Nginx config
+├── kubernetes/           # KinD config, K8s manifests, and instructions
 ├── docs/                 # design specs and engineering notes
 ├── .github/workflows/    # CI/CD pipeline definition
 ├── docker-compose.yaml   # local multi-container environment
@@ -54,6 +55,34 @@ docker-lab/
 - Docker Engine
 - Docker Compose v2
 - Git
+
+## Quick start
+
+### Docker Compose
+
+```bash
+git clone https://github.com/ahmed63/docker-lab.git
+cd docker-lab
+cp .env.example .env
+docker compose up -d --build
+# Open http://localhost:3000
+```
+
+### Kubernetes (KinD)
+
+```bash
+cd kubernetes
+kind create cluster --config kind-config.yaml
+kubectl apply -f namespace.yaml
+kubectl create secret generic db-credentials \
+  --from-literal=username=<your-username> \
+  --from-literal=password=<your-password> \
+  -n my-namespace
+kubectl apply -f database-deployment.yaml -f database-service.yaml
+kubectl apply -f backend-deployment.yaml -f backend-service.yaml
+kubectl apply -f frontend-deployment.yaml -f frontend-service.yaml
+# Open http://localhost:80
+```
 
 ### Start the stack locally
 
@@ -181,4 +210,3 @@ docker compose down -v
 ## Summary
 
 This project serves as a compact but realistic example of DevOps engineering in practice: application delivery, containerization, automation, security, testing, and release workflow all live in one repository.
-9uT6P;)xjn@e)H+p

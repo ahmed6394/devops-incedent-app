@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: backend-deployment
+  name: backend-deployment
+  namespace: my-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-deployment
+  template:
+    metadata:
+      labels:
+        app: backend-deployment
+    spec:
+      containers:
+      - image: ahmed63/devops-incident-management-backend
+        name: backend
+        ports:
+        - containerPort: 5000
+        env:
+        - name: DB_HOST
+          value: database
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_USER
+          value: incident_user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: password
+        - name: DB_NAME
+          value: incidentdb
