@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-incident-management-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ahmed6394/devops-incedent-app.git
+    targetRevision: main
+    path: kubernetes
+    # FIX 1: Correctly structure the exclusion rule to ignore the KinD config file
+    directory:
+      exclude: "kind-config.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: my-namespace
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      # FIX 2: Bypasses standard tracking errors for complex elements
+      - ServerSideApply=true
+  # FIX 3: Ignore the tracking metadata conflicts on your manually created namespace
+  ignoreDifferences:
+    - group: ""
+      kind: Namespace
+      jsonPointers:
+        - /metadata/annotations/argocd.argoproj.io~1tracking-id
+        - /metadata/labels/argocd.argoproj.io~1instance
