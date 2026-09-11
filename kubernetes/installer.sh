@@ -65,7 +65,7 @@ fi
 # 4. Confirm Versions
 # ----------------------------
 echo
-echo "Installed Versions Searcing....:"
+echo "Installed Versions Searcing...:"
 docker --version
 kind --version
 kubectl version --client --output=yaml
