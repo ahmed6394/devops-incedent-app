@@ -31,6 +31,8 @@ The stack is composed of three main services:
 | Backend | Node.js, Express |
 | Database | PostgreSQL 16 |
 | Orchestration | Docker Compose |
+| Kubernetes | KinD, kubectl |
+| GitOps | ArgoCD |
 | CI/CD | GitHub Actions |
 | Security | Trivy |
 | Quality | SonarQube (planned integration) |
@@ -41,7 +43,7 @@ The stack is composed of three main services:
 docker-lab/
 ├── backend/              # Express API service and Dockerfile
 ├── frontend/             # React frontend and Nginx config
-├── kubernetes/           # KinD config, K8s manifests, and instructions
+├── kubernetes/           # KinD config, Kubernetes manifests, and ArgoCD application
 ├── docs/                 # design specs and engineering notes
 ├── .github/workflows/    # CI/CD pipeline definition
 ├── docker-compose.yaml   # local multi-container environment
@@ -61,8 +63,8 @@ docker-lab/
 ### Docker Compose
 
 ```bash
-git clone https://github.com/ahmed63/docker-lab.git
-cd docker-lab
+git clone https://github.com/ahmed6394/devops-incedent-app.git
+cd devops-incedent-app
 cp .env.example .env
 docker compose up -d --build
 # Open http://localhost:3000
@@ -81,10 +83,32 @@ kubectl create secret generic db-credentials \
 kubectl apply -f database-deployment.yaml -f database-service.yaml
 kubectl apply -f backend-deployment.yaml -f backend-service.yaml
 kubectl apply -f frontend-deployment.yaml -f frontend-service.yaml
-# Open http://localhost:80
+# Open http://localhost:30080
 ```
 
-### Start the stack locally
+The Kubernetes manifests deploy the application into the `my-namespace`
+namespace. PostgreSQL uses the `db-credentials` Secret, the backend is
+exposed internally through a `ClusterIP` Service, and the frontend is exposed
+through a `NodePort` on port `30080`.
+
+### ArgoCD GitOps deployment
+
+ArgoCD manages the Kubernetes resources from the Git repository and keeps the
+application synchronized with the `main` branch. The ArgoCD Application
+definition is stored in [kubernetes/argocd.yaml](kubernetes/argocd.yaml).
+
+Apply it to an existing ArgoCD installation with:
+
+```bash
+kubectl apply -f kubernetes/argocd.yaml
+```
+
+The configuration enables automated synchronization, pruning of removed
+resources, self-healing, namespace creation, and server-side apply. It deploys
+the manifests from the `kubernetes/` directory into the `my-namespace`
+namespace.
+
+### Local container operations
 
 ```bash
 docker compose up -d --build
@@ -188,6 +212,10 @@ SonarQube Cloud overview:
 GitHub Actions CI pipeline:
 
 ![GitHub Actions CI pipeline](https://i.ibb.co/Vpz9xt5r/Screenshot-2026-08-07-143759.png)
+
+ArgoCD application overview:
+
+![ArgoCD application overview](https://i.ibb.co/hJ7rV3BL/Screenshot-2026-09-11-225551.png)
 
 ## Operational notes
 
